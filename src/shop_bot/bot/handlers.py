@@ -425,12 +425,6 @@ def get_user_router() -> Router:
         if is_subscription_forced and channel_url:
             welcome_parts.append("Для доступа ко всем функциям, пожалуйста, подпишитесь на наш канал.\n")
         
-        if terms_url:
-            welcome_parts.append("Также необходимо ознакомиться и принять наши Условия использования.")
-        elif privacy_url:
-            welcome_parts.append("Также необходимо ознакомиться с нашей Политикой конфиденциальности.")
-        elif terms_url and privacy_url:
-            welcome_parts.append("Также необходимо ознакомиться с нашими Условиями использования и Политикой конфиденциальности.")
 
         welcome_parts.append("\nПосле этого нажмите кнопку ниже.")
         final_text = "\n".join(welcome_parts)
@@ -795,7 +789,7 @@ def get_user_router() -> Router:
             result = await xui_api.create_or_update_key_on_host(
                 host_name=host_name,
                 email=f"user{user_id}-key{get_next_key_number(user_id)}-trial@telegram.bot",
-                days_to_add=trial_days - 3
+                days_to_add=trial_days
             )
             
             # Добавляем логирование после вызова API
