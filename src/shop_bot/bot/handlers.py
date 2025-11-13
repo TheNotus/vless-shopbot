@@ -188,7 +188,7 @@ def get_user_router() -> Router:
         final_text = get_profile_text(username, total_spent, total_months, vpn_status_text)
         await callback.message.answer(final_text, reply_markup=keyboards.create_back_to_menu_keyboard())
 
-    @user_router.callback_query(F.data == "get_trial_photo")
+    '''@user_router.callback_query(F.data == "get_trial_photo")
     @registration_required
     async def get_trial_photo(callback: types.CallbackQuery, state: FSMContext):
         await callback.answer()
@@ -212,7 +212,7 @@ def get_user_router() -> Router:
             await callback.message.answer(
                 "Выберите сервер, на котором хотите получить пробный ключ:",
                 reply_markup=keyboards.create_host_selection_keyboard(hosts, action="trial")
-            )
+            )'''
 
     @user_router.callback_query(F.data == "manage_keys_photo")
     @registration_required
@@ -248,21 +248,6 @@ def get_user_router() -> Router:
         builder.button(text="⬅️ Назад", callback_data="back_to_main_menu")
         await callback.message.answer(
             text, reply_markup=builder.as_markup()
-        )
-    
-
-
-    @user_router.callback_query(F.data == "howto_vless_photo")
-    @registration_required
-    async def show_instruction_handler_photo(callback: types.CallbackQuery):
-        await callback.answer()
-        await callback.message.delete()
-        key_id = int(callback.data.split("_")[2])
-
-        await callback.message.answer(
-            "Выберите вашу платформу для инструкции по подключению VLESS:",
-            reply_markup=keyboards.create_howto_vless_keyboard_key(key_id),
-            disable_web_page_preview=True
         )
     
     @user_router.callback_query(F.data == "show_help_photo")
@@ -710,54 +695,6 @@ def get_user_router() -> Router:
             text, reply_markup=builder.as_markup()
         )
 
-    @user_router.callback_query(F.data == "withdraw_request")
-    @registration_required
-    async def withdraw_request_handler(callback: types.CallbackQuery, state: FSMContext):
-        await callback.answer()
-        await callback.message.edit_text(
-            "Пожалуйста, отправьте ваши реквизиты для вывода (номер карты или номер телефона и банк):"
-        )
-        await state.set_state(WithdrawStates.waiting_for_details)
-
-    @user_router.message(WithdrawStates.waiting_for_details)
-    @registration_required
-    async def process_withdraw_details(message: types.Message, state: FSMContext):
-        user_id = message.from_user.id
-        user = get_user(user_id)
-        balance = user.get('referral_balance', 0)
-        details = message.text.strip()
-        if balance < 100:
-            await message.answer("❌ Ваш баланс менее 100 руб. Вывод недоступен.")
-            await state.clear()
-            return
-
-        admin_id = int(get_setting("admin_telegram_id"))
-        text = (
-            f"💸 <b>Заявка на вывод реферальных средств</b>\n"
-            f"👤 Пользователь: @{user.get('username', 'N/A')} (ID: <code>{user_id}</code>)\n"
-            f"💰 Сумма: <b>{balance:.2f} RUB</b>\n"
-            f"📄 Реквизиты: <code>{details}</code>\n\n"
-            f"/approve_withdraw_{user_id} /decline_withdraw_{user_id}"
-        )
-        await message.answer("Ваша заявка отправлена администратору. Ожидайте ответа.")
-        await message.bot.send_message(admin_id, text, parse_mode="HTML")
-        await state.clear()
-
-    @user_router.message(Command(commands=["decline_withdraw"]))
-    async def decline_withdraw_handler(message: types.Message):
-        admin_id = int(get_setting("admin_telegram_id"))
-        if message.from_user.id != admin_id:
-            return
-        try:
-            user_id = int(message.text.split("_")[-1])
-            await message.answer(f"❌ Заявка пользователя {user_id} отклонена.")
-            await message.bot.send_message(
-                user_id,
-                "❌ Ваша заявка на вывод отклонена. Проверьте корректность реквизитов и попробуйте снова."
-            )
-        except Exception as e:
-            await message.answer(f"Ошибка: {e}")
-
     @user_router.callback_query(F.data == "show_about")
     @registration_required
     async def about_handler(callback: types.CallbackQuery):
@@ -819,12 +756,13 @@ def get_user_router() -> Router:
         user_id = callback.from_user.id
         user_db_data = get_user(user_id)
         if user_db_data and user_db_data.get('trial_used'):
+            await callback.message.delete()
             await callback.answer("Вы уже использовали бесплатный пробный период.", show_alert=True)
             return
 
         hosts = get_all_hosts()
         if not hosts:
-            await callback.message.edit_text("❌ В данный момент нет доступных серверов для создания пробного ключа.")
+            await callback.message.answer("❌ В данный момент нет доступных серверов для создания пробного ключа.")
             return
             
         if len(hosts) == 1:
@@ -832,7 +770,7 @@ def get_user_router() -> Router:
             await process_trial_key_creation(callback.message, hosts[0]['host_name'])
         else:
             await callback.answer()
-            await callback.message.edit_text(
+            await callback.message.answer(
                 "Выберите сервер, на котором хотите получить пробный ключ:",
                 reply_markup=keyboards.create_host_selection_keyboard(hosts, action="trial")
             )
@@ -841,21 +779,31 @@ def get_user_router() -> Router:
     @registration_required
     async def trial_host_selection_handler(callback: types.CallbackQuery):
         await callback.answer()
+        await callback.message.delete()
         host_name = callback.data[len("select_host_trial_"):]
         await process_trial_key_creation(callback.message, host_name)
 
     async def process_trial_key_creation(message: types.Message, host_name: str):
         user_id = message.chat.id
-        await message.edit_text(f"Отлично! Создаю для вас бесплатный ключ на {get_setting('trial_duration_days')} дня на сервере \"{host_name}\"...")
+        trial_days = int(get_setting('trial_duration_days'))
+        await message.answer(f"Отлично! Создаю для вас бесплатный ключ на {trial_days} дня на сервере \"{host_name}\"...")
 
         try:
+            # Добавляем логирование перед вызовом API
+            logger.info(f"DEBUG: Calling xui_api with days_to_add = {trial_days}")
+            
             result = await xui_api.create_or_update_key_on_host(
                 host_name=host_name,
                 email=f"user{user_id}-key{get_next_key_number(user_id)}-trial@telegram.bot",
-                days_to_add=int(get_setting("trial_duration_days"))
+                days_to_add=trial_days - 3
             )
-            if not result:
-                await message.edit_text("❌ Не удалось создать пробный ключ. Ошибка на сервере.")
+            
+            # Добавляем логирование после вызова API
+            if result:
+                logger.info(f"DEBUG: xui_api returned expiry_timestamp_ms = {result['expiry_timestamp_ms']}")
+            else:
+                logger.info(f"DEBUG: xui_api returned None or invalid result")
+                await message.answer("❌ Не удалось создать пробный ключ. Ошибка на сервере.")
                 return
 
             set_trial_used(user_id)
@@ -865,19 +813,30 @@ def get_user_router() -> Router:
                 email=f"user_{user_id}@trial.com",
                 host_name=host_name,
                 xui_client_uuid=result['client_uuid'],
-                days=int(get_setting('trial_duration_days')),
+                days=trial_days,
                 key_email=result['email'],
                 expiry_timestamp_ms=result['expiry_timestamp_ms']
             )
             
-            await message.delete()
+            # Удаляем сообщение только после успешного создания ключа и его сохранения
+            try:
+                await message.delete()
+            except Exception as delete_error:
+                logger.warning(f"Could not delete message for user {user_id}: {delete_error}")
+            
             new_expiry_date = datetime.fromtimestamp(result['expiry_timestamp_ms'] / 1000)
+            # Добавляем логирование вычисленной даты
+            logger.info(f"DEBUG: Calculated expiry date is {new_expiry_date.isoformat()}")
+            
             final_text = get_purchase_success_text("готов", get_next_key_number(user_id) -1, new_expiry_date, result['connection_string'])
             await message.answer(text=final_text, reply_markup=keyboards.create_key_info_keyboard(new_key_id))
 
         except Exception as e:
             logger.error(f"Error creating trial key for user {user_id} on host {host_name}: {e}", exc_info=True)
-            await message.edit_text("❌ Произошла ошибка при создании пробного ключа.")
+            try:
+                await message.answer("❌ Произошла ошибка при создании пробного ключа.")
+            except Exception as msg_error:
+                logger.error(f"Could not send error message to user {user_id}: {msg_error}")
 
     @user_router.callback_query(F.data.startswith("show_key_"))
     @registration_required
@@ -941,9 +900,10 @@ def get_user_router() -> Router:
     @registration_required
     async def show_instruction_handler(callback: types.CallbackQuery):
         await callback.answer()
+        await callback.message.delete()
         key_id = int(callback.data.split("_")[2])
 
-        await callback.message.edit_text(
+        await callback.message.answer(
             "Выберите вашу платформу для инструкции по подключению VLESS:",
             reply_markup=keyboards.create_howto_vless_keyboard_key(key_id),
             disable_web_page_preview=True
@@ -953,8 +913,8 @@ def get_user_router() -> Router:
     @registration_required
     async def show_instruction_handler(callback: types.CallbackQuery):
         await callback.answer()
-
-        await callback.message.edit_text(
+        await callback.message.delete()
+        await callback.message.answer(
             "Выберите вашу платформу для инструкции по подключению VLESS:",
             reply_markup=keyboards.create_howto_vless_keyboard(),
             disable_web_page_preview=True
@@ -1756,8 +1716,6 @@ async def get_ton_usdt_rate() -> Decimal | None:
         logger.error(f"Error getting TON USDT Binance rate: {e}", exc_info=True)
         return None
 
-import traceback
-
 async def process_successful_payment(bot: Bot, metadata: dict):
     try:
         user_id = int(metadata['user_id'])
@@ -1805,7 +1763,28 @@ async def process_successful_payment(bot: Bot, metadata: dict):
             email = key_data['key_email']
             logger.info(f"Using existing email for key extension: {email}")
         
-        days_to_add = months * 30
+        # Вычисляем точное количество дней, учитывая количество месяцев
+        import calendar
+        
+        start_date = datetime.now().date()
+        current_date = start_date
+        
+        # Вычисляем дату окончания, добавляя месяцы
+        for _ in range(months):
+            if current_date.month == 12:
+                current_date = current_date.replace(year=current_date.year + 1, month=1)
+            else:
+                next_month = current_date.month + 1
+                # Находим последний день следующего месяца
+                max_day = calendar.monthrange(current_date.year, next_month)[1]
+                # Используем минимальное значение между текущим днем и максимальным днем следующего месяца
+                day = min(current_date.day, max_day)
+                current_date = current_date.replace(month=next_month, day=day)
+        
+        # Вычисляем количество дней между начальной и конечной датой
+        days_to_add = (current_date - start_date).days
+        logger.info(f"Calculated days_to_add: {days_to_add} for {months} months from {start_date} to {current_date}")
+        
         logger.info(f"Calling xui_api.create_or_update_key_on_host with host_name={host_name}, email={email}, days_to_add={days_to_add}")
         
         result = await xui_api.create_or_update_key_on_host(
@@ -1905,13 +1884,13 @@ async def process_successful_payment(bot: Bot, metadata: dict):
 
         # Начисляем реферальное вознаграждение за покупки
         user = get_user(user_id)
-        if user.referred_by:
-            referrer = get_user(user.referred_by)
+        if user and user.get('referred_by'):
+            referrer = get_user(user['referred_by'])
             if referrer:
                 referral_percentage = get_setting("referral_percentage") or 0
                 bonus_amount = (price * float(referral_percentage)) / 100
                 if bonus_amount > 0:
-                    # Добавляем бонус к балансу реферала
+                    # Добавляем бонус к балансу реферера
                     current_referrer_balance = referrer.get('referral_balance', 0)
                     new_referrer_balance = current_referrer_balance + bonus_amount
                     # В предположении, что есть функция для обновления баланса реферала
@@ -1920,24 +1899,21 @@ async def process_successful_payment(bot: Bot, metadata: dict):
                     # Проверим, есть ли такая функция или обновление идет через другую логику
                     # Предположим, что есть функция add_referral_bonus(referrer_id, amount)
                     from shop_bot.data_manager.database import add_referral_bonus
-                    try:
-                        add_referral_bonus(referrer['telegram_id'], bonus_amount)
-                        
-                        await bot.send_message(
-                            referrer['telegram_id'],
-                            f"🎉 Ваш реферал {user.get('username', user.get('first_name', 'пользователь'))} совершил покупку на сумму {price:.2f} RUB. "
-                            f"Вам начислен бонус: {bonus_amount:.2f} RUB. "
-                            f"Ваш текущий баланс: {new_referrer_balance:.2f} RUB."
-                        )
-                    except Exception as post_exc:
-                        logger.exception(f"Не удалось отправить реферальное уведомление пользователю {referrer['telegram_id']}")
+                    add_referral_bonus(referrer['telegram_id'], bonus_amount)
+                    
+                    await bot.send_message(
+                        referrer['telegram_id'],
+                        f"🎉 Ваш реферал {user.get('username', user.get('first_name', 'пользователь'))} совершил покупку на сумму {price:.2f} RUB. "
+                        f"Вам начислен бонус: {bonus_amount:.2f} RUB. "
+                        f"Ваш текущий баланс: {new_referrer_balance:.2f} RUB."
+                    )
 
         logger.info(f"Updating user stats for user {user_id}, adding price {price}, months {months}")
         try:
             update_user_stats(user_id, price, months)
         except Exception as db_error:
             logger.error(f"Database error when updating user stats for user {user_id}: {db_error}", exc_info=True)
-            # Продолжаем выполнение, так как это не критично для основного функционанала
+            # Продолжаем выполнение, так как это не критично для основного функционала
         
         user_info = get_user(user_id)
         logger.info(f"User info retrieved: {user_info is not None}")
@@ -1949,12 +1925,9 @@ async def process_successful_payment(bot: Bot, metadata: dict):
         log_amount_rub = float(price)
         log_method = metadata.get('payment_method', 'Unknown')
         
-        plan_info = get_plan_by_id(metadata.get('plan_id'))
-        plan_name = plan_info.get('plan_name', 'Unknown') if plan_info else 'Unknown'
-        
         log_metadata = json.dumps({
             "plan_id": metadata.get('plan_id'),
-            "plan_name": plan_name,
+            "plan_name": get_plan_by_id(metadata.get('plan_id')).get('plan_name', 'Unknown') if metadata.get('plan_id') and get_plan_by_id(metadata.get('plan_id')) else 'Unknown',
             "host_name": metadata.get('host_name'),
             "customer_email": metadata.get('customer_email')
         })
@@ -1975,127 +1948,54 @@ async def process_successful_payment(bot: Bot, metadata: dict):
             )
         except Exception as db_error:
             logger.error(f"Database error when logging transaction for user {user_id}: {db_error}", exc_info=True)
-            # Продолжаем выполнение, так как это не критично для основного функционанала
+            # Продолжаем выполнение, так как это не критично для основного функционала
         
+        # Удаляем сообщение только после успешного выполнения всех операций
         try:
             await processing_message.delete()
-        except Exception as post_exc:
-            logger.exception(f"Не удалось удалить сообщение процесса оплаты для пользователя {user_id}")
+        except Exception as delete_error:
+            logger.warning(f"Could not delete processing message for user {user_id}: {delete_error}")
         
-        # Получаем connection_string и expiry_timestamp_ms с проверкой
-        connection_string = result.get('connection_string')
-        expiry_timestamp_ms = result.get('expiry_timestamp_ms')
+        connection_string = result['connection_string']
+        new_expiry_date = datetime.fromtimestamp(result['expiry_timestamp_ms'] / 1000)
         
-        if not connection_string:
-            logger.error(f"Missing connection_string in result for user {user_id}")
-            await bot.send_message(
-                chat_id=user_id,
-                text="❌ Ошибка: не получен ключ подключения."
-            )
-            return
-            
-        if not expiry_timestamp_ms:
-            logger.error(f"Missing expiry_timestamp_ms in result for user {user_id}")
-            await bot.send_message(
-                chat_id=user_id,
-                text="❌ Ошибка: не получена дата окончания ключа."
-            )
-            return
+        all_user_keys = get_user_keys(user_id)
+        key_number = next((i + 1 for i, key in enumerate(all_user_keys) if key['key_id'] == key_id), len(all_user_keys))
+
+        final_text = get_purchase_success_text(
+            action="создан" if action == "new" else "продлен",
+            key_number=key_number,
+            expiry_date=new_expiry_date,
+            connection_string=connection_string
+        )
         
-        # Проверяем, что expiry_timestamp_ms - это число
+        logger.info(f"Sending success message to user {user_id}")
         try:
-            expiry_timestamp_ms = float(expiry_timestamp_ms)
-        except (ValueError, TypeError):
-            logger.error(f"Invalid expiry_timestamp_ms value: {expiry_timestamp_ms} for user {user_id}")
-            await bot.send_message(
-                chat_id=user_id,
-                text="❌ Ошибка: некорректная дата окончания ключа."
-            )
-            return
-        
-        # Создаем объект datetime с обработкой исключения
-        try:
-            new_expiry_date = datetime.fromtimestamp(expiry_timestamp_ms / 1000)
-        except (ValueError, OSError, OverflowError) as e:
-            logger.error(f"Error converting timestamp to datetime for user {user_id}: {e}")
-            await bot.send_message(
-                chat_id=user_id,
-                text="❌ Ошибка: некорректная дата окончания ключа."
-            )
-            return
-        
-        # Получаем список ключей пользователя
-        try:
-            all_user_keys = get_user_keys(user_id) or []
-        except Exception as e:
-            logger.error(f"Error retrieving user keys for user {user_id}: {e}", exc_info=True)
-            all_user_keys = []
-        
-        # Определяем номер ключа с обработкой исключения
-        try:
-            key_number = next((i + 1 for i, key in enumerate(all_user_keys) if key['key_id'] == key_id), len(all_user_keys))
-        except Exception as e:
-            logger.error(f"Error determining key number for user {user_id}, key_id {key_id}: {e}", exc_info=True)
-            # Используем fallback значение
-            key_number = get_next_key_number(user_id)
-        
-        # Проверяем, что key_id не None
-        if key_id is None:
-            logger.error(f"key_id is None for user {user_id}")
-            await bot.send_message(
-                chat_id=user_id,
-                text="❌ Ошибка: некорректный идентификатор ключа."
-            )
-            return
-        
-        # Формируем финальный текст с обработкой исключения
-        try:
-            final_text = get_purchase_success_text(
-                action="создан" if action == "new" else "продлен",
-                key_number=key_number,
-                expiry_date=new_expiry_date,
-                connection_string=connection_string
-            )
-        except Exception as e:
-            logger.error(f"Error formatting success message for user {user_id}: {e}", exc_info=True)
-            await bot.send_message(
-                chat_id=user_id,
-                text="❌ Ошибка: не удалось сформировать сообщение с ключом."
-            )
-            return
-        
-        # Отправляем сообщение пользователю с обработкой исключения
-        try:
-            logger.info(f"Sending success message to user {user_id}")
             await bot.send_message(
                 chat_id=user_id,
                 text=final_text,
                 reply_markup=keyboards.create_key_info_keyboard(key_id)
             )
-        except Exception as post_exc:
-            logger.exception(f"Не удалось отправить финальное сообщение пользователю {user_id}")
-            # Пытаемся отправить хотя бы простое сообщение
-            try:
-                await bot.send_message(
-                    chat_id=user_id,
-                    text="✅ Покупка прошла успешно! Ключ был создан, но возникла ошибка при его отправке. Обратитесь в поддержку для получения ключа."
-                )
-            except:
-                logger.error(f"Could not send any success message to user {user_id}")
-        
-        # Отправляем уведомление администратору с обработкой исключения
+        except Exception as send_error:
+            logger.error(f"Could not send success message to user {user_id}: {send_error}")
+            # Если не удалось отправить сообщение напрямую, пробуем отправить через редактирование
+            # Но в данном случае processing_message уже удалено, поэтому просто логируем ошибку
+            logger.error(f"Could not send success message to user {user_id} after processing: {send_error}")
+
+        logger.info(f"Sending admin notification for user {user_id}")
         try:
-            logger.info(f"Sending admin notification for user {user_id}")
             await notify_admin_of_purchase(bot, metadata)
-        except Exception as post_exc:
-            logger.exception(f"Не удалось отправить уведомление администратору о покупке пользователя {user_id}")
+        except Exception as admin_error:
+            logger.error(f"Could not send admin notification for user {user_id}: {admin_error}")
         
     except Exception as e:
-        logger.error(f"Критическая ошибка в process_successful_payment: {e}\n{traceback.format_exc()}")
+        logger.error(f"Error processing payment for user {user_id} on host {host_name}: {e}", exc_info=True)
+        logger.error(f"Full error traceback:", exc_info=True)
         try:
             await processing_message.edit_text("❌ Ошибка при выдаче ключа.")
-        except:
+        except Exception as edit_error:
+            logger.error(f"Could not edit processing message for user {user_id}: {edit_error}")
             try:
-                await bot.send_message(user_id, "❌ Ошибка при выдаче ключа.")
-            except:
-                logger.error(f"Could not notify user {user_id} about error")
+                await bot.send_message(user_id, "❌ Произошла ошибка при выдаче ключа.")
+            except Exception as msg_error:
+                logger.error(f"Could not send error message to user {user_id}: {msg_error}")

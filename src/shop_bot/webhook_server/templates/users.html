@@ -52,6 +52,16 @@
 								Бан
 							</button>
 						</form>
+						{% endif %} {% if user.user_keys %}
+						<form
+							action="{{ url_for('revoke_keys_route', user_id=user.telegram_id) }}"
+							method="post"
+							data-confirm="ВНИМАНИЕ! Это действие удалит ВСЕ ключи пользователя с серверов. Вы уверены?"
+						>
+							<button type="submit" class="button button-danger button-small">
+								Отозвать
+							</button>
+						</form>
 						{% endif %}
 						<form
 							action="{{ url_for('delete_user_route', user_id=user.telegram_id) }}"
