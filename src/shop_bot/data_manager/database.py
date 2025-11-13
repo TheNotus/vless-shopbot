@@ -6,7 +6,8 @@ import json
 
 logger = logging.getLogger(__name__)
 
-
+#BASE_DIR = Path(__file__).resolve().parent.parent
+#PROJECT_ROOT = BASE_DIR
 PROJECT_ROOT = Path("/app/project")
 DB_FILE = PROJECT_ROOT / "users.db"
 

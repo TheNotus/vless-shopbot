@@ -205,8 +205,6 @@ def create_welcome_keyboard(channel_url: str | None, is_subscription_forced: boo
 
     if channel_url and terms_url and privacy_url and is_subscription_forced:
         builder.button(text="📢 Перейти в канал", url=channel_url)
-        builder.button(text="📄 Условия использования", url=terms_url)
-        builder.button(text="🔒 Политика конфиденциальности", url=privacy_url)
         builder.button(text="✅ Я подписался", callback_data="check_subscription_and_agree")
     elif channel_url and terms_url and privacy_url:
         builder.button(text="📢 Наш канал (не обязательно)", url=channel_url)

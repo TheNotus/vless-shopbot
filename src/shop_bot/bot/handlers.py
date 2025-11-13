@@ -1560,7 +1560,7 @@ async def process_successful_onboarding(callback: types.CallbackQuery, state: FS
     await state.clear()
     await callback.message.delete()
     await callback.message.answer("Приятного использования!", reply_markup=keyboards.main_reply_keyboard)
-    await show_main_menu(callback.message)
+    await show_main_menu(callback.message, with_photo=True)
 
 async def is_url_reachable(url: str) -> bool:
     pattern = re.compile(
