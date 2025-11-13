@@ -1,0 +1,174 @@
+# === GIT REPOSITORY ===
+# Exclude entire .git directory
+.git/
+
+# === DOCKER FILES ===
+# Exclude Docker-related files that are not needed in the image
+Dockerfile
+docker-compose*.yml
+docker-compose*.yaml
+.docker/
+
+# === IDE CONFIGURATION ===
+# VSCode configuration
+.vscode/
+
+# PyCharm configuration
+.idea/
+
+# === TESTING ===
+# Test files and directories
+tests/
+test_*.py
+*_test.py
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+
+# === DOCUMENTATION ===
+# Documentation files not needed in production
+README.md
+README.rst
+README.txt
+LICENSE
+CONTRIBUTING.md
+CHANGELOG.md
+TODO.md
+NOTES.md
+
+# === DEVELOPMENT SCRIPTS ===
+# Development and installation scripts
+install.sh
+dev-requirements.txt
+requirements-dev.txt
+requirements-test.txt
+setup.cfg
+pyproject.toml
+Makefile
+*.toml
+
+# === LOGS ===
+# Log files
+*.log
+logs/
+*.out
+
+# === SECRETS ===
+# Environment files and secrets (should be mounted or built into image securely)
+.env
+.env.local
+.env.production
+.env.development
+.env.test
+*.env
+.envrc
+.env.localrc
+*.key
+*.pem
+*.crt
+*.cert
+*.secret
+*.token
+*.password
+*.passwd
+*.config.json
+
+# === PYTHON ARTIFACTS ===
+# Byte-compiled / optimized files
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+
+# Virtual environments (should not be in production anyway)
+venv/
+env/
+ENV/
+.venv/
+.env/
+.ENV/
+.venv.bak/
+
+# Distribution / packaging artifacts
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# === SYSTEM FILES ===
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.Spotlight-V100
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Linux
+*~
+.directory
+.sass-cache
+.terminfo
+.tmp/
+temp/
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msix
+*.msm
+*.msp
+desktop.ini
+
+# === BACKUP FILES ===
+# Backup files
+*~
+*.bak
+*.backup
+*.old
+*.orig
+*.tmp
+*.swp
+*.swo
+
+# === MISC ===
+# Any other files that shouldn't be in the Docker image
+*.swp
+*.swo
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

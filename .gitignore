@@ -1,0 +1,185 @@
+# === PYTHON ARTIFACTS ===
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# C extensions
+*.c
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+.env/
+.ENV/
+.venv.bak/
+.env.example
+
+# === SECRETS ===
+# Environment variables and secrets
+.env
+.env.local
+.env.production
+.env.development
+.env.test
+*.env
+.envrc
+.env.localrc
+*.key
+*.pem
+*.crt
+*.cert
+*.secret
+*.token
+*.password
+*.passwd
+*.config.json
+
+# === IDE CONFIGURATION ===
+# VSCode
+.vscode/
+*.code-workspace
+
+# PyCharm
+.idea/
+*.iml
+*.iws
+*.pyc
+*.pyo
+*.pyd
+*.pydevproject
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# Atom
+.atom/
+
+# Visual Studio
+*.user
+*.userosscache
+*.suo
+*.csproj.user
+
+# === LOGS ===
+# Logs
+*.log
+logs/
+*.out
+*.pid
+*.seed
+
+# === SYSTEM FILES ===
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.Spotlight-V100
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Linux
+*~
+.DS_Store
+.directory
+.sass-cache
+.terminfo
+.tmp/
+temp/
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+desktop.ini
+
+# === DOCKER ===
+# Docker
+.docker/
+docker-compose*.yml
+docker-compose*.yaml
+
+# === TESTING ===
+# Test files and directories
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+*.log
+
+# === MISC ===
+# Other common files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*.swp
+*.swo
+*~
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
