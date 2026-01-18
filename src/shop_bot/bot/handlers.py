@@ -1154,21 +1154,6 @@ def get_user_router() -> Router:
         discount_applied = False
         message_text = CHOOSE_PAYMENT_METHOD_MESSAGE
 
-        if user_data.get('referred_by') and user_data.get('total_spent', 0) == 0:
-            discount_percentage_str = get_setting("referral_discount") or "0"
-            discount_percentage = Decimal(discount_percentage_str)
-            
-            if discount_percentage > 0:
-                discount_amount = (price * discount_percentage / 100).quantize(Decimal("0.01"))
-                final_price = price - discount_amount
-
-                message_text = (
-                    f"🎉 Как приглашенному пользователю, на вашу первую покупку предоставляется скидка {discount_percentage_str}%!\n"
-                    f"Старая цена: <s>{price:.2f} RUB</s>\n"
-                    f"<b>Новая цена: {final_price:.2f} RUB</b>\n\n"
-                ) + CHOOSE_PAYMENT_METHOD_MESSAGE
-
-        await state.update_data(final_price=float(final_price))
 
         await message.edit_text(
             message_text,
@@ -1876,31 +1861,6 @@ async def process_successful_payment(bot: Bot, metadata: dict):
         
         price = float(metadata.get('price'))
 
-        # Начисляем реферальное вознаграждение за покупки
-        user = get_user(user_id)
-        if user and user.get('referred_by'):
-            referrer = get_user(user['referred_by'])
-            if referrer:
-                referral_percentage = get_setting("referral_percentage") or 0
-                bonus_amount = (price * float(referral_percentage)) / 100
-                if bonus_amount > 0:
-                    # Добавляем бонус к балансу реферера
-                    current_referrer_balance = referrer.get('referral_balance', 0)
-                    new_referrer_balance = current_referrer_balance + bonus_amount
-                    # В предположении, что есть функция для обновления баланса реферала
-                    # на самом деле, возможно, нужно использовать log_transaction или иную функцию
-                    # для обновления баланса реферала - в текущем виде предполагаем, что referral_balance обновляется как поле
-                    # Проверим, есть ли такая функция или обновление идет через другую логику
-                    # Предположим, что есть функция add_referral_bonus(referrer_id, amount)
-                    from shop_bot.data_manager.database import add_referral_bonus
-                    add_referral_bonus(referrer['telegram_id'], bonus_amount)
-                    
-                    await bot.send_message(
-                        referrer['telegram_id'],
-                        f"🎉 Ваш реферал {user.get('username', user.get('first_name', 'пользователь'))} совершил покупку на сумму {price:.2f} RUB. "
-                        f"Вам начислен бонус: {bonus_amount:.2f} RUB. "
-                        f"Ваш текущий баланс: {new_referrer_balance:.2f} RUB."
-                    )
 
         logger.info(f"Updating user stats for user {user_id}, adding price {price}, months {months}")
         try:
