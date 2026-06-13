@@ -23,8 +23,8 @@ def main():
     
     async def shutdown(sig: signal.Signals, loop: asyncio.AbstractEventLoop):
         logger.info(f"Received signal: {sig.name}. Shutting down...")
-        if bot_controller.get_status()["is_running"]:
-            bot_controller.stop()
+        if bot_controller.get_status().get("shop_bot_running"):
+            bot_controller.stop_shop_bot()
             await asyncio.sleep(2)
         tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
         if tasks:

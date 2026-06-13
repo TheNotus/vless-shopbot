@@ -12,10 +12,14 @@ from shop_bot.modules import xui_api
 from shop_bot.bot import keyboards
 
 CHECK_INTERVAL_SECONDS = 300
-NOTIFY_BEFORE_HOURS = {72, 48, 24, 1}
-notified_users = {}
+NOTIFY_BEFORE_HOURS = (72, 24, 1)  # за 3 дня, 1 день и 1 час до окончания
+notified_users: dict[int, dict[int, dict]] = {}
 
 logger = logging.getLogger(__name__)
+
+def _is_in_notification_window(hours_left: float, hours_mark: int) -> bool:
+    """True if remaining time is within the 1-hour window before hours_mark."""
+    return hours_mark - 1 < hours_left <= hours_mark
 
 def format_time_left(hours: int) -> str:
     if hours >= 24:
@@ -91,6 +95,7 @@ async def check_expiring_subscriptions(bot: Bot):
     
     _cleanup_notified_users(all_keys)
     
+    notifications_sent = 0
     for key in all_keys:
         try:
             expiry_date = datetime.fromisoformat(key['expiry_date'])
@@ -99,21 +104,27 @@ async def check_expiring_subscriptions(bot: Bot):
             if time_left.total_seconds() < 0:
                 continue
 
-            total_hours_left = int(time_left.total_seconds() / 3600)
+            hours_left = time_left.total_seconds() / 3600
             user_id = key['user_id']
             key_id = key['key_id']
 
+            expiry_iso = key['expiry_date']
+            key_notifications = notified_users.setdefault(user_id, {}).get(key_id)
+            if key_notifications is None or key_notifications['expiry'] != expiry_iso:
+                key_notifications = {'expiry': expiry_iso, 'sent': set()}
+                notified_users[user_id][key_id] = key_notifications
+
             for hours_mark in NOTIFY_BEFORE_HOURS:
-                if hours_mark - 1 < total_hours_left <= hours_mark:
-                    notified_users.setdefault(user_id, {}).setdefault(key_id, set())
-                    
-                    if hours_mark not in notified_users[user_id][key_id]:
-                        await send_subscription_notification(bot, user_id, key_id, hours_mark, expiry_date)
-                        notified_users[user_id][key_id].add(hours_mark)
-                    break 
+                if _is_in_notification_window(hours_left, hours_mark) and hours_mark not in key_notifications['sent']:
+                    await send_subscription_notification(bot, user_id, key_id, hours_mark, expiry_date)
+                    key_notifications['sent'].add(hours_mark)
+                    notifications_sent += 1
+                    break
                     
         except Exception as e:
             logger.error(f"Error processing expiry for key {key.get('key_id')}: {e}")
+
+    logger.info(f"Scheduler: Expiry check done. Keys checked: {len(all_keys)}, notifications sent: {notifications_sent}.")
 
 async def sync_keys_with_panels():
     logger.info("Scheduler: Starting sync with XUI panels...")
@@ -194,7 +205,7 @@ async def periodic_subscription_check(bot_controller: BotController):
         try:
             await sync_keys_with_panels()
 
-            if bot_controller.get_status().get("is_running"):
+            if bot_controller.get_status().get("shop_bot_running"):
                 bot = bot_controller.get_bot_instance()
                 if bot:
                     await check_expiring_subscriptions(bot)

@@ -682,7 +682,9 @@ def update_key_status_from_server(key_email: str, xui_client_data):
         with sqlite3.connect(DB_FILE) as conn:
             cursor = conn.cursor()
             if xui_client_data:
-                expiry_date = datetime.fromtimestamp(xui_client_data.expiry_time / 1000)
+                reset_days = xui_client_data.reset if xui_client_data.reset else 0
+                expiry_ms = xui_client_data.expiry_time + reset_days * 24 * 3600 * 1000
+                expiry_date = datetime.fromtimestamp(expiry_ms / 1000)
                 cursor.execute("UPDATE vpn_keys SET xui_client_uuid = ?, expiry_date = ? WHERE key_email = ?", (xui_client_data.id, expiry_date, key_email))
             else:
                 cursor.execute("DELETE FROM vpn_keys WHERE key_email = ?", (key_email,))

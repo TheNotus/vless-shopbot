@@ -76,10 +76,11 @@ def update_or_create_client_on_panel(api: Api, inbound_id: int, email: str, days
         new_expiry_ms = int(new_expiry_dt.timestamp() * 1000)
 
         if client_index != -1:
-            inbound_to_modify.settings.clients[client_index].reset = days_to_add
-            inbound_to_modify.settings.clients[client_index].enable = True
-            
-            client_uuid = inbound_to_modify.settings.clients[client_index].id
+            existing_client = inbound_to_modify.settings.clients[client_index]
+            existing_client.expiry_time = new_expiry_ms
+            existing_client.reset = 0
+            existing_client.enable = True
+            client_uuid = existing_client.id
         else:
             client_uuid = str(uuid.uuid4())
             new_client = Client(
