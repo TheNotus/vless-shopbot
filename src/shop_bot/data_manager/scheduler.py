@@ -12,7 +12,7 @@ from shop_bot.modules import xui_api
 from shop_bot.bot import keyboards
 
 CHECK_INTERVAL_SECONDS = 300
-NOTIFY_BEFORE_HOURS = (72, 24, 1)  # за 3 дня, 1 день и 1 час до окончания
+NOTIFY_BEFORE_HOURS = (24, 4, 1)  # за 3 дня, 1 день и 1 час до окончания
 notified_users: dict[int, dict[int, dict]] = {}
 
 logger = logging.getLogger(__name__)
