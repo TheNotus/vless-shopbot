@@ -80,7 +80,11 @@ def update_or_create_client_on_panel(api: Api, inbound_id: int, email: str, days
             existing_client.expiry_time = new_expiry_ms
             existing_client.reset = 0
             existing_client.enable = True
+            # updateClient (в отличие от updateInbound) синхронизирует таблицу
+            # client_traffics, иначе панель продолжает показывать "ended"
+            existing_client.inbound_id = inbound_id
             client_uuid = existing_client.id
+            api.client.update(client_uuid, existing_client)
         else:
             client_uuid = str(uuid.uuid4())
             new_client = Client(
@@ -90,9 +94,7 @@ def update_or_create_client_on_panel(api: Api, inbound_id: int, email: str, days
                 flow="xtls-rprx-vision",
                 expiry_time=new_expiry_ms
             )
-            inbound_to_modify.settings.clients.append(new_client)
-
-        api.inbound.update(inbound_id, inbound_to_modify)
+            api.client.add(inbound_id, [new_client])
 
         return client_uuid, new_expiry_ms
 
